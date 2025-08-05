@@ -75,7 +75,7 @@ print(f"Semi-major axis: {recovered_elements.a/1000:.1f} km")
 print(f"Eccentricity: {recovered_elements.e:.6f}")
 ```
 
-## 🧪 Testing
+## Testing
 
 Run the test suite to validate implementations:
 
@@ -121,7 +121,7 @@ orbital-rendezvous-control/
 
 ## Development Roadmap
 
-### Phase 1: Foundations ✅
+### Phase 1: Foundations 
 - [x] Orbital elements and conversions
 - [x] Mathematical utilities
 - [x] Unit testing framework
