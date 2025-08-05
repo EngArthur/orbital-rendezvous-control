@@ -2,7 +2,7 @@
 
 A complete Python implementation of autonomous orbital rendezvous guidance, navigation, and control based on the research paper "Relative Motion Guidance, Navigation and Control for Autonomous Orbital Rendezvous" by Okasha & Newman (2014).
 
-## 🚀 Project Overview
+##  Project Overview
 
 This project demonstrates advanced expertise in:
 - **Orbital Mechanics**: Complete implementation of orbital dynamics and perturbations
@@ -10,22 +10,22 @@ This project demonstrates advanced expertise in:
 - **Control Systems**: Coupled translational and rotational control
 - **Aerospace Engineering**: High-fidelity spacecraft simulation
 
-## 📋 Features
+##  Features
 
-### ✅ Implemented
+###  Implemented
 - **Orbital Elements**: Complete orbital elements representation and conversions
 - **Coordinate Systems**: ECI, LVLH (Hill frame), RSW transformations
 - **Mathematical Utilities**: Quaternions, rotation matrices, Kepler equation solver
 - **Unit Testing**: Comprehensive test suite for validation
 
-### 🚧 In Development
+###  In Development
 - **Perturbation Models**: J2 gravitational and atmospheric drag effects
 - **Attitude Dynamics**: Quaternion-based attitude representation and control
 - **Extended Kalman Filter**: Relative navigation with sensor fusion
 - **Control Systems**: LQR-based translational and rotational controllers
 - **Simulation Environment**: Complete orbital rendezvous scenarios
 
-## 🛠️ Installation
+##  Installation
 
 ```bash
 # Clone the repository
@@ -39,7 +39,7 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## 📖 Usage
+## Usage
 
 ### Basic Orbital Elements Example
 
