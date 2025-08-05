@@ -90,7 +90,7 @@ pytest tests/test_dynamics/test_orbital_elements.py
 pytest --cov=src tests/
 ```
 
-## 📚 Technical Background
+## Technical Background
 
 This implementation is based on the theoretical framework presented in:
 
@@ -103,7 +103,7 @@ This implementation is based on the theoretical framework presented in:
 3. **Extended Kalman Filter**: For relative state estimation using LIDAR and star tracker
 4. **Coupled Control**: Simultaneous translational and rotational control
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 orbital-rendezvous-control/
@@ -119,7 +119,7 @@ orbital-rendezvous-control/
 └── data/                         # Simulation data and results
 ```
 
-## 🎯 Development Roadmap
+## Development Roadmap
 
 ### Phase 1: Foundations ✅
 - [x] Orbital elements and conversions
@@ -146,29 +146,27 @@ orbital-rendezvous-control/
 - [ ] Orbital environment simulation
 - [ ] Monte Carlo analysis tools
 
-## 👨‍💻 Author
+## Author
 
 **Arthur Allex Feliphe Barbosa Moreno**
 - Institution: IME - Instituto Militar de Engenharia
-- Email: arthur.moreno@ime.eb.br
+- Email: 
 - LinkedIn: [arthurmoreno](https://www.linkedin.com/in/arthurmoreno/)
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📊 Performance Metrics
+## Performance Metrics
 
 - **Code Coverage**: Target >90%
 - **Documentation**: Complete API documentation
 - **Validation**: Comparison with published results
 - **Performance**: Real-time capable simulation
 
----
 
-*This project demonstrates advanced aerospace engineering capabilities and serves as a comprehensive portfolio piece showcasing expertise in orbital mechanics, navigation, and control systems.*
 
