@@ -2,7 +2,7 @@
 
 A complete Python implementation of autonomous orbital rendezvous guidance, navigation, and control based on the research paper "Relative Motion Guidance, Navigation and Control for Autonomous Orbital Rendezvous" by Okasha & Newman (2014).
 
-## 🚀 Project Overview
+## Project Overview
 
 This project demonstrates advanced expertise in:
 - **Orbital Mechanics**: Complete implementation of orbital dynamics and perturbations
@@ -11,37 +11,37 @@ This project demonstrates advanced expertise in:
 - **Control Systems**: Coupled translational and rotational control
 - **Aerospace Engineering**: High-fidelity spacecraft simulation
 
-## 📋 Features
+## Features
 
-### ✅ Phase 1 - Foundations (Complete)
+### Phase 1 - Foundations (Complete)
 - **Orbital Elements**: Complete orbital elements representation and conversions
 - **Coordinate Systems**: ECI, LVLH (Hill frame), RSW transformations
 - **Mathematical Utilities**: Quaternions, rotation matrices, Kepler equation solver
 - **Unit Testing**: Comprehensive test suite for validation
 
-### ✅ Phase 2 - Dynamics (Complete)
+### Phase 2 - Dynamics (Complete)
 - **Orbital Perturbations**: J2 gravitational and atmospheric drag effects
 - **Attitude Dynamics**: Quaternion-based attitude kinematics and dynamics
 - **Relative Motion**: Clohessy-Wiltshire and nonlinear relative dynamics
 - **Coupled Motion**: Translational-rotational coupling effects
 - **Environmental Models**: Atmospheric density and gravity gradient torques
 
-### 🚧 Phase 3 - Navigation (Planned)
+### Phase 3 - Navigation (Planned)
 - **Extended Kalman Filter**: Relative navigation with sensor fusion
 - **Sensor Models**: LIDAR, star tracker, gyroscope, and accelerometer models
 - **Measurement Processing**: Nonlinear measurement models and linearization
 
-### 🚧 Phase 4 - Control (Planned)
+### Phase 4 - Control (Planned)
 - **LQR Controllers**: Optimal translational and rotational control
 - **Guidance Laws**: Rendezvous trajectory planning and execution
 - **Thruster Models**: Realistic actuator dynamics and constraints
 
-### 🚧 Phase 5 - Simulation (Planned)
+### Phase 5 - Simulation (Planned)
 - **Monte Carlo Analysis**: Statistical performance evaluation
 - **Mission Scenarios**: Complete rendezvous and docking simulations
 - **Visualization**: 3D trajectory and attitude visualization
 
-## 🛠️ Installation
+## Installation
 
 ```bash
 # Clone the repository
@@ -55,7 +55,7 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## 📖 Usage
+## Usage
 
 ### Phase 1 Example - Orbital Elements
 
@@ -120,7 +120,7 @@ new_state = propagate_relative_state(relative_state, target_elements, 600.0)
 print(f"New range: {new_state.range:.1f} m")
 ```
 
-## 🧪 Testing
+## Testing
 
 Run the test suite to validate implementations:
 
@@ -137,7 +137,8 @@ pytest tests/test_dynamics/test_attitude_dynamics.py
 pytest --cov=src tests/
 ```
 
-## 🎯 Examples
+<<<<<<< HEAD
+##  Examples
 
 Run the comprehensive examples to see the system in action:
 
@@ -149,7 +150,10 @@ python examples/basic_example_fixed.py
 python examples/phase2_example.py
 ```
 
-## 📚 Technical Background
+##  Technical Background
+=======
+## Technical Background
+>>>>>>> 8fd08889de1a4586ba4d0213b2080e8cf7e21736
 
 This implementation is based on the theoretical framework presented in:
 
@@ -166,7 +170,7 @@ This implementation is based on the theoretical framework presented in:
 7. **Clohessy-Wiltshire Equations**: Linear relative motion dynamics
 8. **State Transition Matrix**: Analytical solution for relative motion propagation
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 orbital-rendezvous-control/
@@ -187,14 +191,14 @@ orbital-rendezvous-control/
 └── data/                         # Simulation data and results
 ```
 
-## 🎯 Development Roadmap
+## Development Roadmap
 
-### Phase 1: Foundations ✅
+### Phase 1: Foundations 
 - [x] Orbital elements and conversions
 - [x] Mathematical utilities
 - [x] Unit testing framework
 
-### Phase 2: Dynamics ✅
+### Phase 2: Dynamics 
 - [x] Perturbation models (J2, atmospheric drag)
 - [x] Attitude dynamics with quaternions
 - [x] Relative motion equations
@@ -215,6 +219,7 @@ orbital-rendezvous-control/
 - [ ] Orbital environment simulation
 - [ ] Monte Carlo analysis tools
 
+<<<<<<< HEAD
 ## 📊 Performance Metrics
 
 - **Code Coverage**: >85% (Phase 1-2)
@@ -222,22 +227,36 @@ orbital-rendezvous-control/
 - **Validation**: Comparison with published results
 - **Performance**: Real-time capable simulation
 
-## 👨‍💻 Author
+## Author
+=======
+## Author
+>>>>>>> 8fd08889de1a4586ba4d0213b2080e8cf7e21736
 
 **Arthur Allex Feliphe Barbosa Moreno**
 - Institution: IME - Instituto Militar de Engenharia
-- Email: arthur.moreno@ime.eb.br
+- Email: 
 - LinkedIn: [arthurmoreno](https://www.linkedin.com/in/arthurmoreno/)
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+<<<<<<< HEAD
 ---
 
 *This project demonstrates advanced aerospace engineering capabilities and serves as a comprehensive portfolio piece showcasing expertise in orbital mechanics, attitude dynamics, perturbation modeling, and spacecraft control systems.*
+=======
+## Performance Metrics
+
+- **Code Coverage**: Target >90%
+- **Documentation**: Complete API documentation
+- **Validation**: Comparison with published results
+- **Performance**: Real-time capable simulation
+
+
+>>>>>>> 8fd08889de1a4586ba4d0213b2080e8cf7e21736
 
