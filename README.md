@@ -151,9 +151,6 @@ python examples/phase2_example.py
 ```
 
 ##  Technical Background
-=======
-## Technical Background
->>>>>>> 8fd08889de1a4586ba4d0213b2080e8cf7e21736
 
 This implementation is based on the theoretical framework presented in:
 
