@@ -217,7 +217,7 @@ orbital-rendezvous-control/
 - [ ] Monte Carlo analysis tools
 
 <<<<<<< HEAD
-## 📊 Performance Metrics
+## Performance Metrics
 
 - **Code Coverage**: >85% (Phase 1-2)
 - **Documentation**: Complete API documentation
