@@ -197,7 +197,11 @@ python examples/phase2_example.py
 python examples/phase3_example.py
 ```
 
+<<<<<<< HEAD
 ## Technical Background
+=======
+##  Technical Background
+>>>>>>> 91c7bee120bd6ab47a0e8662aadc4c7961281198
 
 This implementation is based on the theoretical framework presented in:
 
@@ -283,6 +287,10 @@ orbital-rendezvous-control/
 - [ ] Monte Carlo analysis tools
 - [ ] 3D visualization
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 91c7bee120bd6ab47a0e8662aadc4c7961281198
 ## Performance Metrics
 
 - **Code Coverage**: >90% (Phase 1-3)
