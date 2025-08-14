@@ -8,20 +8,20 @@ Author: Arthur Allex Feliphe Barbosa Moreno
 Institution: IME - Instituto Militar de Engenharia - 2025
 """
 
-import numpy as np
-import sys
 import os
+import sys
+
+import numpy as np
 
 # Add src to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from dynamics.orbital_elements import (
-    OrbitalElements, 
-    orbital_elements_to_cartesian,
-    cartesian_to_orbital_elements,
-    propagate_orbital_elements_mean_motion
-)
-from utils.constants import EARTH_RADIUS
+# Import direto dos módulos (sem usar __init__.py)
+from dynamics.orbital_elements import (OrbitalElements,
+                                       cartesian_to_orbital_elements,
+                                       orbital_elements_to_cartesian,
+                                       propagate_orbital_elements_mean_motion)
+from utils.constants import EARTH_MU, EARTH_RADIUS
 
 
 def main():
@@ -36,7 +36,8 @@ def main():
         i=np.radians(51.6),          # ISS inclination
         omega_cap=np.radians(45),    # RAAN
         omega=np.radians(30),        # Argument of periapsis
-        f=np.radians(0)              # True anomaly
+        f=np.radians(0),             # True anomaly
+        mu=EARTH_MU                  # Gravitational parameter
     )
     
     print(f"  Semi-major axis: {elements.a/1000:.1f} km")
@@ -56,7 +57,7 @@ def main():
     
     # Convert back to orbital elements
     print("\n3. Converting back to orbital elements:")
-    recovered = cartesian_to_orbital_elements(r_vec, v_vec)
+    recovered = cartesian_to_orbital_elements(r_vec, v_vec, EARTH_MU)
     
     print(f"  Semi-major axis: {recovered.a/1000:.1f} km")
     print(f"  Eccentricity: {recovered.e:.6f}")
@@ -70,7 +71,7 @@ def main():
     
     # Propagate orbit for different time intervals
     print("\n5. Orbital propagation:")
-    time_intervals = [60, 3600, elements.period/4, elements.period]  # 1 min, 1 hour, quarter orbit, full orbit
+    time_intervals = [60, 3600, elements.period/4, elements.period]
     
     for dt in time_intervals:
         propagated = propagate_orbital_elements_mean_motion(elements, dt)
@@ -87,12 +88,13 @@ def main():
     
     # Demonstrate orbital properties
     print("\n6. Orbital properties at different true anomalies:")
-    true_anomalies = [0, 90, 180, 270]  # degrees
+    true_anomalies = [0, 90, 180, 270]
     
     for f_deg in true_anomalies:
         test_elements = OrbitalElements(
             elements.a, elements.e, elements.i,
-            elements.omega_cap, elements.omega, np.radians(f_deg)
+            elements.omega_cap, elements.omega, np.radians(f_deg),
+            mu=EARTH_MU
         )
         
         r = test_elements.radius()
@@ -106,4 +108,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

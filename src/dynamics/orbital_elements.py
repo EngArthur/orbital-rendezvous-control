@@ -9,15 +9,23 @@ Author: Arthur Allex Feliphe Barbosa Moreno
 Institution: IME - Instituto Militar de Engenharia - 2025
 """
 
-import numpy as np
-from typing import Tuple, Union
+import os
+import sys
 from dataclasses import dataclass
+from typing import Tuple, Union
 
-from ..utils.constants import EARTH_MU, PI, TWO_PI, TOLERANCE_ANGLE, TOLERANCE_POSITION
-from ..utils.math_utils import (
-    normalize_angle, wrap_to_2pi, wrap_to_pi, 
-    solve_kepler_equation, rotation_matrix_313
-)
+import numpy as np
+
+# Add src to path for imports
+current_dir = os.path.dirname(__file__)
+src_dir = os.path.join(current_dir, '..', '..', 'src')
+sys.path.insert(0, src_dir)
+
+# Import with absolute paths
+from utils.constants import (EARTH_MU, PI, TOLERANCE_ANGLE, TOLERANCE_POSITION,
+                             TWO_PI)
+from utils.math_utils import (normalize_angle, rotation_matrix_313,
+                              solve_kepler_equation, wrap_to_2pi, wrap_to_pi)
 
 
 @dataclass
@@ -37,29 +45,21 @@ class OrbitalElements:
     a: float
     e: float
     i: float
-    omega_cap: float  # RAAN (Ω)
-    omega: float      # Argument of periapsis (ω)
-    f: float          # True anomaly
+    omega_cap: float
+    omega: float
+    f: float
     mu: float = EARTH_MU
     
     def __post_init__(self):
         """Validate orbital elements after initialization."""
-        self._validate_elements()
-        self._normalize_angles()
-    
-    def _validate_elements(self):
-        """Validate orbital element ranges."""
         if self.a <= 0:
             raise ValueError("Semi-major axis must be positive")
         if not (0 <= self.e < 1):
             raise ValueError("Eccentricity must be in range [0, 1)")
         if not (0 <= self.i <= PI):
             raise ValueError("Inclination must be in range [0, π]")
-        if self.mu <= 0:
-            raise ValueError("Gravitational parameter must be positive")
-    
-    def _normalize_angles(self):
-        """Normalize angular elements to proper ranges."""
+        
+        # Normalize angles
         self.omega_cap = wrap_to_2pi(self.omega_cap)
         self.omega = wrap_to_2pi(self.omega)
         self.f = wrap_to_2pi(self.f)
@@ -67,7 +67,7 @@ class OrbitalElements:
     @property
     def period(self) -> float:
         """Orbital period [s]."""
-        return TWO_PI * np.sqrt(self.a**3 / self.mu)
+        return 2 * PI * np.sqrt(self.a**3 / self.mu)
     
     @property
     def mean_motion(self) -> float:
@@ -75,147 +75,49 @@ class OrbitalElements:
         return np.sqrt(self.mu / self.a**3)
     
     @property
-    def specific_energy(self) -> float:
+    def angular_momentum(self) -> float:
+        """Specific angular momentum [m²/s]."""
+        return np.sqrt(self.mu * self.a * (1 - self.e**2))
+    
+    @property
+    def energy(self) -> float:
         """Specific orbital energy [m²/s²]."""
         return -self.mu / (2 * self.a)
     
-    @property
-    def angular_momentum_magnitude(self) -> float:
-        """Specific angular momentum magnitude [m²/s]."""
-        return np.sqrt(self.mu * self.a * (1 - self.e**2))
-    
-    def mean_anomaly(self) -> float:
-        """Calculate mean anomaly from true anomaly [rad]."""
-        E = self.eccentric_anomaly()
-        return E - self.e * np.sin(E)
-    
-    def eccentric_anomaly(self) -> float:
-        """Calculate eccentric anomaly from true anomaly [rad]."""
-        cos_f = np.cos(self.f)
-        sin_f = np.sin(self.f)
-        
-        cos_E = (self.e + cos_f) / (1 + self.e * cos_f)
-        sin_E = np.sqrt(1 - self.e**2) * sin_f / (1 + self.e * cos_f)
-        
-        return np.arctan2(sin_E, cos_E)
-    
     def radius(self) -> float:
-        """Calculate orbital radius at current true anomaly [m]."""
+        """Current radius [m]."""
         return self.a * (1 - self.e**2) / (1 + self.e * np.cos(self.f))
     
     def velocity_magnitude(self) -> float:
-        """Calculate velocity magnitude at current position [m/s]."""
+        """Current velocity magnitude [m/s]."""
         r = self.radius()
         return np.sqrt(self.mu * (2/r - 1/self.a))
-
-
-def cartesian_to_orbital_elements(r_vec: np.ndarray, v_vec: np.ndarray, 
-                                mu: float = EARTH_MU) -> OrbitalElements:
-    """
-    Convert Cartesian state vectors to orbital elements.
     
-    Args:
-        r_vec: Position vector in ECI frame [m] (3x1)
-        v_vec: Velocity vector in ECI frame [m/s] (3x1)
-        mu: Gravitational parameter [m³/s²]
+    def eccentric_anomaly(self) -> float:
+        """Eccentric anomaly [rad]."""
+        cos_E = (self.e + np.cos(self.f)) / (1 + self.e * np.cos(self.f))
+        sin_E = np.sqrt(1 - self.e**2) * np.sin(self.f) / (1 + self.e * np.cos(self.f))
+        return np.arctan2(sin_E, cos_E)
     
-    Returns:
-        Orbital elements
-    """
-    if r_vec.shape != (3,) or v_vec.shape != (3,):
-        raise ValueError("Position and velocity vectors must be 3D")
-    
-    # Magnitudes
-    r = np.linalg.norm(r_vec)
-    v = np.linalg.norm(v_vec)
-    
-    if r < TOLERANCE_POSITION:
-        raise ValueError("Position magnitude too small")
-    
-    # Angular momentum vector
-    h_vec = np.cross(r_vec, v_vec)
-    h = np.linalg.norm(h_vec)
-    
-    if h < TOLERANCE_POSITION:
-        raise ValueError("Angular momentum too small (rectilinear motion)")
-    
-    # Node vector
-    k_vec = np.array([0, 0, 1])
-    n_vec = np.cross(k_vec, h_vec)
-    n = np.linalg.norm(n_vec)
-    
-    # Eccentricity vector
-    e_vec = ((v**2 - mu/r) * r_vec - np.dot(r_vec, v_vec) * v_vec) / mu
-    e = np.linalg.norm(e_vec)
-    
-    # Specific energy
-    energy = v**2/2 - mu/r
-    
-    # Semi-major axis
-    if abs(energy) < TOLERANCE_POSITION:
-        raise ValueError("Parabolic orbit not supported")
-    a = -mu / (2 * energy)
-    
-    # Inclination
-    i = np.arccos(np.clip(h_vec[2] / h, -1, 1))
-    
-    # Right ascension of ascending node (RAAN)
-    if n < TOLERANCE_POSITION:  # Equatorial orbit
-        omega_cap = 0.0
-    else:
-        omega_cap = np.arccos(np.clip(n_vec[0] / n, -1, 1))
-        if n_vec[1] < 0:
-            omega_cap = TWO_PI - omega_cap
-    
-    # Argument of periapsis
-    if n < TOLERANCE_POSITION:  # Equatorial orbit
-        if i < TOLERANCE_ANGLE:  # Equatorial prograde
-            omega = np.arccos(np.clip(e_vec[0] / e, -1, 1))
-            if e_vec[1] < 0:
-                omega = TWO_PI - omega
-        else:  # Equatorial retrograde
-            omega = np.arccos(np.clip(-e_vec[0] / e, -1, 1))
-            if e_vec[1] > 0:
-                omega = TWO_PI - omega
-    else:
-        if e < TOLERANCE_POSITION:  # Circular orbit
-            omega = 0.0
-        else:
-            omega = np.arccos(np.clip(np.dot(n_vec, e_vec) / (n * e), -1, 1))
-            if e_vec[2] < 0:
-                omega = TWO_PI - omega
-    
-    # True anomaly
-    if e < TOLERANCE_POSITION:  # Circular orbit
-        if n < TOLERANCE_POSITION:  # Equatorial circular
-            f = np.arccos(np.clip(r_vec[0] / r, -1, 1))
-            if r_vec[1] < 0:
-                f = TWO_PI - f
-        else:
-            f = np.arccos(np.clip(np.dot(n_vec, r_vec) / (n * r), -1, 1))
-            if r_vec[2] < 0:
-                f = TWO_PI - f
-    else:
-        f = np.arccos(np.clip(np.dot(e_vec, r_vec) / (e * r), -1, 1))
-        if np.dot(r_vec, v_vec) < 0:
-            f = TWO_PI - f
-    
-    return OrbitalElements(a, e, i, omega_cap, omega, f, mu)
+    def mean_anomaly(self) -> float:
+        """Mean anomaly [rad]."""
+        E = self.eccentric_anomaly()
+        return E - self.e * np.sin(E)
 
 
 def orbital_elements_to_cartesian(elements: OrbitalElements) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Convert orbital elements to Cartesian state vectors.
+    Convert orbital elements to Cartesian coordinates.
     
     Args:
         elements: Orbital elements
-    
+        
     Returns:
-        Tuple of (position_vector, velocity_vector) in ECI frame
+        Tuple of (position [m], velocity [m/s]) vectors in ECI frame
     """
-    # Calculate position and velocity in perifocal frame
+    # Current radius and velocity magnitude
     r = elements.radius()
-    h = elements.angular_momentum_magnitude
+    h = elements.angular_momentum
     
     # Position in perifocal frame
     r_pqw = np.array([
@@ -231,18 +133,89 @@ def orbital_elements_to_cartesian(elements: OrbitalElements) -> Tuple[np.ndarray
         0.0
     ])
     
-    # Transformation matrix from perifocal to ECI
-    R_pqw_to_eci = rotation_matrix_313(
-        elements.omega_cap, 
-        elements.i, 
-        elements.omega
-    ).T
+    # Rotation matrix from perifocal to ECI
+    R_pqw_to_eci = rotation_matrix_313(elements.omega_cap, elements.i, elements.omega)
     
     # Transform to ECI frame
     r_eci = R_pqw_to_eci @ r_pqw
     v_eci = R_pqw_to_eci @ v_pqw
     
     return r_eci, v_eci
+
+
+def cartesian_to_orbital_elements(r_vec: np.ndarray, v_vec: np.ndarray, 
+                                mu: float = EARTH_MU) -> OrbitalElements:
+    """
+    Convert Cartesian coordinates to orbital elements.
+    
+    Args:
+        r_vec: Position vector [m]
+        v_vec: Velocity vector [m/s]
+        mu: Gravitational parameter [m³/s²]
+        
+    Returns:
+        Orbital elements
+    """
+    r = np.linalg.norm(r_vec)
+    v = np.linalg.norm(v_vec)
+    
+    # Angular momentum vector
+    h_vec = np.cross(r_vec, v_vec)
+    h = np.linalg.norm(h_vec)
+    
+    # Node vector
+    k_hat = np.array([0, 0, 1])
+    n_vec = np.cross(k_hat, h_vec)
+    n = np.linalg.norm(n_vec)
+    
+    # Eccentricity vector
+    e_vec = ((v**2 - mu/r) * r_vec - np.dot(r_vec, v_vec) * v_vec) / mu
+    e = np.linalg.norm(e_vec)
+    
+    # Specific energy
+    energy = v**2/2 - mu/r
+    
+    # Semi-major axis
+    if abs(energy) > TOLERANCE_POSITION:
+        a = -mu / (2 * energy)
+    else:
+        a = np.inf  # Parabolic orbit
+    
+    # Inclination
+    i = np.arccos(np.clip(h_vec[2] / h, -1, 1))
+    
+    # Right ascension of ascending node
+    if n > TOLERANCE_POSITION:
+        omega_cap = np.arccos(np.clip(n_vec[0] / n, -1, 1))
+        if n_vec[1] < 0:
+            omega_cap = TWO_PI - omega_cap
+    else:
+        omega_cap = 0.0  # Equatorial orbit
+    
+    # Argument of periapsis
+    if n > TOLERANCE_POSITION and e > TOLERANCE_POSITION:
+        omega = np.arccos(np.clip(np.dot(n_vec, e_vec) / (n * e), -1, 1))
+        if e_vec[2] < 0:
+            omega = TWO_PI - omega
+    else:
+        omega = 0.0  # Circular or equatorial orbit
+    
+    # True anomaly
+    if e > TOLERANCE_POSITION:
+        f = np.arccos(np.clip(np.dot(e_vec, r_vec) / (e * r), -1, 1))
+        if np.dot(r_vec, v_vec) < 0:
+            f = TWO_PI - f
+    else:
+        # Circular orbit - use argument of latitude
+        if n > TOLERANCE_POSITION:
+            f = np.arccos(np.clip(np.dot(n_vec, r_vec) / (n * r), -1, 1))
+            if r_vec[2] < 0:
+                f = TWO_PI - f
+        else:
+            f = np.arctan2(r_vec[1], r_vec[0])
+            f = wrap_to_2pi(f)
+    
+    return OrbitalElements(a, e, i, omega_cap, omega, f, mu)
 
 
 def propagate_orbital_elements_mean_motion(elements: OrbitalElements, 
@@ -281,96 +254,62 @@ def propagate_orbital_elements_mean_motion(elements: OrbitalElements,
     )
 
 
-def orbital_elements_rates_gauss(elements: OrbitalElements, 
-                               perturbation_acceleration: np.ndarray) -> np.ndarray:
+def propagate_orbital_elements_perturbed(elements: OrbitalElements, 
+                                       delta_t: float,
+                                       perturbation_accelerations: np.ndarray) -> OrbitalElements:
     """
-    Calculate rates of change of orbital elements using Gauss' variational equations.
+    Propagate orbital elements with perturbations using Gauss variational equations.
     
     Args:
-        elements: Current orbital elements
-        perturbation_acceleration: Perturbation acceleration in RSW frame [m/s²] (3x1)
-                                  [radial, along-track, cross-track]
-    
+        elements: Initial orbital elements
+        delta_t: Time step [s]
+        perturbation_accelerations: Perturbation accelerations in RSW frame [m/s²]
+        
     Returns:
-        Rates of orbital elements [da/dt, de/dt, di/dt, dΩ/dt, dω/dt, df/dt]
+        Propagated orbital elements with perturbations
     """
-    if perturbation_acceleration.shape != (3,):
-        raise ValueError("Perturbation acceleration must be 3D vector")
-    
-    a, e, i, omega_cap, omega, f = (
-        elements.a, elements.e, elements.i,
-        elements.omega_cap, elements.omega, elements.f
-    )
-    
-    # Perturbation components
-    a_r, a_s, a_w = perturbation_acceleration
-    
-    # Orbital parameters
+    # Current orbital parameters
     r = elements.radius()
-    h = elements.angular_momentum_magnitude
+    h = elements.angular_momentum
     n = elements.mean_motion
-    p = a * (1 - e**2)  # Semi-latus rectum
     
-    # Trigonometric functions
-    cos_f = np.cos(f)
-    sin_f = np.sin(f)
-    cos_i = np.cos(i)
-    sin_i = np.sin(i)
+    # Perturbation accelerations in RSW frame
+    a_r, a_s, a_w = perturbation_accelerations
     
-    # Gauss' variational equations
-    da_dt = 2 * a**2 / h * (e * sin_f * a_r + p / r * a_s)
+    # Gauss variational equations (rates of change)
+    da_dt = 2 * elements.a**2 / h * (elements.e * np.sin(elements.f) * a_r + 
+                                     (1 + elements.e * np.cos(elements.f)) * a_s)
     
-    de_dt = 1 / h * (p * sin_f * a_r + ((p + r) * cos_f + r * e) * a_s)
+    de_dt = 1 / h * (np.sin(elements.f) * a_r + 
+                     (np.cos(elements.f) + np.cos(elements.f + elements.omega)) * a_s)
     
-    di_dt = r * cos_f / h * a_w
+    di_dt = r * np.cos(elements.f + elements.omega) / h * a_w
     
-    domega_cap_dt = r * sin_f / (h * sin_i) * a_w
+    domega_cap_dt = r * np.sin(elements.f + elements.omega) / (h * np.sin(elements.i)) * a_w
     
-    domega_dt = (1 / (h * e) * (-p * cos_f * a_r + (p + r) * sin_f * a_s) - 
-                 cos_i * domega_cap_dt)
+    domega_dt = 1 / (elements.e * h) * (-np.cos(elements.f) * a_r + 
+                                        np.sin(elements.f) * a_s) - \
+                np.cos(elements.i) * domega_cap_dt
     
-    df_dt = (h / r**2 + 1 / (h * e) * (p * cos_f * a_r - (p + r) * sin_f * a_s))
+    df_dt = h / r**2 + 1 / (elements.e * h) * (np.cos(elements.f) * a_r - 
+                                               np.sin(elements.f) * a_s)
     
-    return np.array([da_dt, de_dt, di_dt, domega_cap_dt, domega_dt, df_dt])
-
-
-def rsw_to_eci_matrix(elements: OrbitalElements) -> np.ndarray:
-    """
-    Calculate transformation matrix from RSW (radial-along track-cross track) 
-    to ECI frame.
+    # Integrate using Euler method
+    new_a = elements.a + da_dt * delta_t
+    new_e = elements.e + de_dt * delta_t
+    new_i = elements.i + di_dt * delta_t
+    new_omega_cap = elements.omega_cap + domega_cap_dt * delta_t
+    new_omega = elements.omega + domega_dt * delta_t
+    new_f = elements.f + df_dt * delta_t
     
-    Args:
-        elements: Orbital elements
+    # Normalize angles
+    new_omega_cap = wrap_to_2pi(new_omega_cap)
+    new_omega = wrap_to_2pi(new_omega)
+    new_f = wrap_to_2pi(new_f)
     
-    Returns:
-        Transformation matrix [3x3]
-    """
-    # Get position and velocity in ECI
-    r_eci, v_eci = orbital_elements_to_cartesian(elements)
+    # Ensure physical constraints
+    new_e = max(0.0, min(new_e, 0.99))  # Keep eccentricity in valid range
+    new_i = max(0.0, min(new_i, PI))    # Keep inclination in valid range
     
-    # Radial unit vector
-    r_hat = r_eci / np.linalg.norm(r_eci)
-    
-    # Cross-track unit vector (normal to orbital plane)
-    h_vec = np.cross(r_eci, v_eci)
-    w_hat = h_vec / np.linalg.norm(h_vec)
-    
-    # Along-track unit vector
-    s_hat = np.cross(w_hat, r_hat)
-    
-    # Transformation matrix (columns are unit vectors)
-    return np.column_stack([r_hat, s_hat, w_hat])
-
-
-def eci_to_rsw_matrix(elements: OrbitalElements) -> np.ndarray:
-    """
-    Calculate transformation matrix from ECI to RSW frame.
-    
-    Args:
-        elements: Orbital elements
-    
-    Returns:
-        Transformation matrix [3x3]
-    """
-    return rsw_to_eci_matrix(elements).T
+    return OrbitalElements(new_a, new_e, new_i, new_omega_cap, new_omega, new_f, elements.mu)
 
