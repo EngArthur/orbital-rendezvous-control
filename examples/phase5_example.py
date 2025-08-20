@@ -11,18 +11,20 @@ Author: Arthur Allex Feliphe Barbosa Moreno
 Institution: IME - Instituto Militar de Engenharia - 2025
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import sys
-import os
 import json
+import os
+import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from simulation.monte_carlo import MonteCarloSimulator, SimulationConfiguration
-from simulation.visualization import TrajectoryVisualizer, TrajectoryData, generate_sample_trajectory
+from simulation.visualization import (TrajectoryData, TrajectoryVisualizer,
+                                      generate_sample_trajectory)
 
 
 def run_complete_simulation_demo():

@@ -1,5 +1,4 @@
-"""
-Orbital Perturbation Models
+"""Orbital Perturbation Models
 
 This module implements various orbital perturbation models including
 J2 gravitational perturbations and atmospheric drag effects.
@@ -8,15 +7,26 @@ Author: Arthur Allex Feliphe Barbosa Moreno
 Institution: IME - Instituto Militar de Engenharia - 2025
 """
 
-import numpy as np
-from typing import Tuple
+import os
+import sys
 from dataclasses import dataclass
+from typing import Tuple
 
-from ..utils.constants import (
-    EARTH_MU, EARTH_RADIUS, EARTH_J2, EARTH_ROTATION_RATE,
-    EARTH_ATMOSPHERE_SCALE_HEIGHT, EARTH_ATMOSPHERE_DENSITY_SEA_LEVEL
-)
-from .orbital_elements import OrbitalElements
+import numpy as np
+
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+# Import required modules
+from dynamics.orbital_elements import (OrbitalElements,
+                                       orbital_elements_to_cartesian)
+from utils.constants import EARTH_MU, EARTH_RADIUS
+
+# Define constants directly (to avoid import issues)
+EARTH_J2 = 1.08262668e-3  # Earth's J2 coefficient (dimensionless)
+EARTH_ROTATION_RATE = 7.2921159e-5  # rad/s
+EARTH_ATMOSPHERE_SCALE_HEIGHT = 8400.0  # m
+EARTH_ATMOSPHERE_DENSITY_SEA_LEVEL = 1.225  # kg/m³
 
 
 @dataclass
@@ -41,6 +51,131 @@ class SpacecraftProperties:
         """Set default SRP area if not provided."""
         if self.srp_area is None:
             self.srp_area = self.drag_area
+
+
+def eci_to_rsw_transformation_matrix(r_vec: np.ndarray, v_vec: np.ndarray) -> np.ndarray:
+    """
+    Calculate transformation matrix from ECI to RSW frame using position and velocity vectors.
+    
+    Args:
+        r_vec: Position vector in ECI frame [m]
+        v_vec: Velocity vector in ECI frame [m/s]
+        
+    Returns:
+        3x3 transformation matrix from ECI to RSW
+    """
+    # Normalize position vector (radial direction)
+    r_hat = r_vec / np.linalg.norm(r_vec)
+    
+    # Angular momentum vector (cross-track direction)
+    h_vec = np.cross(r_vec, v_vec)
+    w_hat = h_vec / np.linalg.norm(h_vec)
+    
+    # Along-track direction (completes right-handed system)
+    s_hat = np.cross(w_hat, r_hat)
+    
+    # RSW transformation matrix (each row is a unit vector)
+    R_eci_to_rsw = np.array([
+        r_hat,  # Radial
+        s_hat,  # Along-track (S)
+        w_hat   # Cross-track (W)
+    ])
+    
+    return R_eci_to_rsw
+
+
+def calculate_orbital_properties(elements: OrbitalElements) -> dict:
+    """
+    Calculate orbital properties directly from elements to avoid dependency issues.
+    
+    Args:
+        elements: Orbital elements
+        
+    Returns:
+        Dictionary with calculated properties
+    """
+    a, e, mu = elements.a, elements.e, elements.mu
+    
+    # Calculate properties directly
+    h = np.sqrt(mu * a * (1 - e**2))  # Angular momentum magnitude
+    n = np.sqrt(mu / a**3)  # Mean motion
+    period = 2 * np.pi / n  # Orbital period
+    
+    return {
+        'angular_momentum_magnitude': h,
+        'mean_motion': n,
+        'period': period
+    }
+
+
+def orbital_elements_rates_gauss_local(elements: OrbitalElements, 
+                                     perturbation_acceleration: np.ndarray) -> np.ndarray:
+    """
+    Calculate rates of change of orbital elements using Gauss' variational equations.
+    
+    Args:
+        elements: Current orbital elements
+        perturbation_acceleration: Perturbation acceleration in RSW frame [m/s²] (3x1)
+                                  [radial, along-track, cross-track]
+    
+    Returns:
+        Rates of orbital elements [da/dt, de/dt, di/dt, dΩ/dt, dω/dt, df/dt]
+    """
+    if perturbation_acceleration.shape != (3,):
+        raise ValueError("Perturbation acceleration must be 3D vector")
+    
+    a, e, i, omega_cap, omega, f = (
+        elements.a, elements.e, elements.i,
+        elements.omega_cap, elements.omega, elements.f
+    )
+    
+    # Perturbation components
+    a_r, a_s, a_w = perturbation_acceleration
+    
+    # Calculate orbital properties directly (bulletproof approach)
+    props = calculate_orbital_properties(elements)
+    h = props['angular_momentum_magnitude']
+    n = props['mean_motion']
+    
+    # Current radius (calculate directly)
+    r = a * (1 - e**2) / (1 + e * np.cos(f))
+    p = a * (1 - e**2)  # Semi-latus rectum
+    
+    # Trigonometric functions
+    cos_f = np.cos(f)
+    sin_f = np.sin(f)
+    cos_i = np.cos(i)
+    sin_i = np.sin(i)
+    
+    # Handle singularities for circular and equatorial orbits
+    if e < 1e-8:  # Nearly circular orbit
+        # For circular orbits, some terms become undefined
+        # Use simplified equations
+        da_dt = 2 * a**2 / h * a_s
+        de_dt = 1 / h * (p * sin_f * a_r + (p + r) * cos_f * a_s)
+        di_dt = r * cos_f / h * a_w
+        domega_cap_dt = r * sin_f / (h * sin_i) * a_w if sin_i > 1e-8 else 0.0
+        domega_dt = -cos_i * domega_cap_dt if sin_i > 1e-8 else 0.0
+        df_dt = h / r**2
+    else:
+        # Standard Gauss' variational equations
+        da_dt = 2 * a**2 / h * (e * sin_f * a_r + p / r * a_s)
+        
+        de_dt = 1 / h * (p * sin_f * a_r + ((p + r) * cos_f + r * e) * a_s)
+        
+        di_dt = r * cos_f / h * a_w
+        
+        if sin_i > 1e-8:  # Avoid division by zero for equatorial orbits
+            domega_cap_dt = r * sin_f / (h * sin_i) * a_w
+        else:
+            domega_cap_dt = 0.0
+        
+        domega_dt = (1 / (h * e) * (-p * cos_f * a_r + (p + r) * sin_f * a_s) - 
+                     cos_i * domega_cap_dt)
+        
+        df_dt = (h / r**2 + 1 / (h * e) * (p * cos_f * a_r - (p + r) * sin_f * a_s))
+    
+    return np.array([da_dt, de_dt, di_dt, domega_cap_dt, domega_dt, df_dt])
 
 
 def j2_perturbation_acceleration_eci(r_eci: np.ndarray) -> np.ndarray:
@@ -89,26 +224,27 @@ def j2_perturbation_acceleration_rsw(elements: OrbitalElements) -> np.ndarray:
         elements.omega_cap, elements.omega, elements.f
     )
     
-    r = elements.radius()
-    n = elements.mean_motion
+    # Calculate radius directly
+    r = a * (1 - e**2) / (1 + e * np.cos(f))
     
     # Trigonometric functions
     cos_f = np.cos(f)
     sin_f = np.sin(f)
     cos_i = np.cos(i)
     sin_i = np.sin(i)
-    cos_u = np.cos(omega + f)  # Argument of latitude
-    sin_u = np.sin(omega + f)
+    
+    # Argument of latitude
+    u = omega + f
+    cos_u = np.cos(u)
+    sin_u = np.sin(u)
     
     # J2 perturbation factor
     factor = -1.5 * EARTH_J2 * EARTH_MU * EARTH_RADIUS**2 / r**4
     
     # RSW components
     a_r = factor * (1 - 3 * sin_i**2 * sin_u**2)
-    
     a_s = factor * sin_i**2 * np.sin(2 * u)
-    
-    a_w = factor * sin_i * np.cos(i) * np.sin(2 * u)
+    a_w = factor * sin_i * cos_i * np.sin(2 * u)
     
     return np.array([a_r, a_s, a_w])
 
@@ -186,16 +322,14 @@ def atmospheric_drag_acceleration_rsw(elements: OrbitalElements, v_eci: np.ndarr
     Returns:
         Drag acceleration in RSW frame [m/s²] (3x1)
     """
-    from .orbital_elements import orbital_elements_to_cartesian, eci_to_rsw_matrix
-    
-    # Get position in ECI
-    r_eci, _ = orbital_elements_to_cartesian(elements)
+    # Get position and velocity in ECI
+    r_eci, v_eci_calc = orbital_elements_to_cartesian(elements)
     
     # Calculate drag in ECI
     a_drag_eci = atmospheric_drag_acceleration_eci(r_eci, v_eci, spacecraft)
     
-    # Transform to RSW frame
-    T_eci_to_rsw = eci_to_rsw_matrix(elements)
+    # Transform to RSW frame using our auxiliary function
+    T_eci_to_rsw = eci_to_rsw_transformation_matrix(r_eci, v_eci_calc)
     a_drag_rsw = T_eci_to_rsw @ a_drag_eci
     
     return a_drag_rsw
@@ -249,15 +383,15 @@ def propagate_orbital_elements_perturbed(elements: OrbitalElements,
     Returns:
         Propagated orbital elements
     """
-    from .orbital_elements import orbital_elements_rates_gauss, propagate_orbital_elements_mean_motion
-    
+    from utils.math_utils import wrap_to_2pi
+
     # Calculate perturbation acceleration
     a_pert = total_perturbation_acceleration_rsw(
         elements, v_eci, spacecraft, include_j2, include_drag
     )
     
-    # Calculate rates using Gauss' equations
-    element_rates = orbital_elements_rates_gauss(elements, a_pert)
+    # Calculate rates using Gauss' equations (local implementation)
+    element_rates = orbital_elements_rates_gauss_local(elements, a_pert)
     
     # Propagate using first-order integration
     new_a = elements.a + element_rates[0] * delta_t
@@ -272,7 +406,6 @@ def propagate_orbital_elements_perturbed(elements: OrbitalElements,
     new_i = max(0.0, min(new_i, np.pi))
     
     # Normalize angles
-    from ..utils.math_utils import wrap_to_2pi
     new_omega_cap = wrap_to_2pi(new_omega_cap)
     new_omega = wrap_to_2pi(new_omega)
     new_f = wrap_to_2pi(new_f)
@@ -295,8 +428,6 @@ def orbital_decay_time_estimate(elements: OrbitalElements,
         Estimated decay time [s]
     """
     # Simplified decay time estimation
-    from .orbital_elements import orbital_elements_to_cartesian
-    
     r_eci, v_eci = orbital_elements_to_cartesian(elements)
     altitude = np.linalg.norm(r_eci) - EARTH_RADIUS
     
@@ -332,8 +463,6 @@ def perturbation_analysis_summary(elements: OrbitalElements,
     Returns:
         Dictionary with perturbation analysis
     """
-    from .orbital_elements import orbital_elements_to_cartesian
-    
     r_eci, v_eci = orbital_elements_to_cartesian(elements)
     altitude = np.linalg.norm(r_eci) - EARTH_RADIUS
     
@@ -360,4 +489,3 @@ def perturbation_analysis_summary(elements: OrbitalElements,
         'estimated_decay_time_days': decay_time / 86400,
         'dominant_perturbation': 'drag' if drag_magnitude > j2_magnitude else 'j2'
     }
-

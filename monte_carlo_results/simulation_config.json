@@ -1,0 +1,12 @@
+{
+  "num_runs": 50,
+  "simulation_duration": 3600.0,
+  "time_step": 10.0,
+  "success_criteria": {
+    "final_position_error": 5.0,
+    "final_velocity_error": 0.1,
+    "final_attitude_error": 0.08726646259971647,
+    "max_control_effort": 50.0,
+    "total_delta_v": 2.0
+  }
+}

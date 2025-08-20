@@ -105,6 +105,8 @@ class OrbitalElements:
         return E - self.e * np.sin(E)
 
 
+
+
 def orbital_elements_to_cartesian(elements: OrbitalElements) -> Tuple[np.ndarray, np.ndarray]:
     """
     Convert orbital elements to Cartesian coordinates.
@@ -313,3 +315,48 @@ def propagate_orbital_elements_perturbed(elements: OrbitalElements,
     
     return OrbitalElements(new_a, new_e, new_i, new_omega_cap, new_omega, new_f, elements.mu)
 
+
+def eci_to_rsw_matrix(r_vec: np.ndarray, v_vec: np.ndarray) -> np.ndarray:
+    """
+    Calculate transformation matrix from ECI to RSW (Radial-Along track-Cross track) frame.
+    
+    Args:
+        r_vec: Position vector in ECI frame [m]
+        v_vec: Velocity vector in ECI frame [m/s]
+        
+    Returns:
+        3x3 transformation matrix from ECI to RSW
+    """
+    # Normalize position vector (radial direction)
+    r_hat = r_vec / np.linalg.norm(r_vec)
+    
+    # Angular momentum vector (cross-track direction)
+    h_vec = np.cross(r_vec, v_vec)
+    w_hat = h_vec / np.linalg.norm(h_vec)
+    
+    # Along-track direction (completes right-handed system)
+    s_hat = np.cross(w_hat, r_hat)
+    
+    # RSW transformation matrix (each row is a unit vector)
+    R_eci_to_rsw = np.array([
+        r_hat,  # Radial
+        s_hat,  # Along-track (S)
+        w_hat   # Cross-track (W)
+    ])
+    
+    return R_eci_to_rsw
+
+
+def rsw_to_eci_matrix(r_vec: np.ndarray, v_vec: np.ndarray) -> np.ndarray:
+    """
+    Calculate transformation matrix from RSW to ECI frame.
+    
+    Args:
+        r_vec: Position vector in ECI frame [m]
+        v_vec: Velocity vector in ECI frame [m/s]
+        
+    Returns:
+        3x3 transformation matrix from RSW to ECI
+    """
+    # RSW to ECI is transpose of ECI to RSW
+    return eci_to_rsw_matrix(r_vec, v_vec).T

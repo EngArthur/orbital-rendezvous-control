@@ -1,0 +1,111 @@
+{
+  "monte_carlo": {
+    "configuration": {
+      "num_runs": 50,
+      "success_criteria": {
+        "final_position_error": 5.0,
+        "final_velocity_error": 0.1,
+        "final_attitude_error": 0.08726646259971647,
+        "max_control_effort": 50.0,
+        "total_delta_v": 2.0
+      }
+    },
+    "statistics": {
+      "success_rate": 0.0,
+      "position_error_mean": Infinity,
+      "position_error_std": Infinity,
+      "delta_v_mean": Infinity,
+      "delta_v_std": Infinity
+    }
+  },
+  "mission_planning": {
+    "phases": [
+      {
+        "name": "Far Range Approach",
+        "duration": 1800,
+        "range": [
+          1000,
+          200
+        ],
+        "max_velocity": 0.5,
+        "control_authority": 10.0
+      },
+      {
+        "name": "Close Range Approach",
+        "duration": 1200,
+        "range": [
+          200,
+          50
+        ],
+        "max_velocity": 0.2,
+        "control_authority": 5.0
+      },
+      {
+        "name": "Proximity Operations",
+        "duration": 600,
+        "range": [
+          50,
+          10
+        ],
+        "max_velocity": 0.05,
+        "control_authority": 2.0
+      }
+    ],
+    "total_duration_minutes": 60.0,
+    "estimated_delta_v": 0.9900000000000001
+  },
+  "strategy_analysis": {
+    "Conservative": {
+      "success_rate": 0.98,
+      "delta_v": 2.5,
+      "duration": 90,
+      "accuracy": 2.0,
+      "description": "High reliability, low risk"
+    },
+    "Nominal": {
+      "success_rate": 0.95,
+      "delta_v": 1.8,
+      "duration": 60,
+      "accuracy": 3.0,
+      "description": "Balanced performance"
+    },
+    "Aggressive": {
+      "success_rate": 0.85,
+      "delta_v": 1.2,
+      "duration": 45,
+      "accuracy": 5.0,
+      "description": "Fast but higher risk"
+    }
+  },
+  "requirements_verification": {
+    "Position Accuracy": {
+      "requirement": 5.0,
+      "achieved": Infinity,
+      "unit": "m",
+      "margin": 0.8
+    },
+    "Success Rate": {
+      "requirement": 0.9,
+      "achieved": 0.0,
+      "unit": "",
+      "margin": 1.1
+    },
+    "Fuel Consumption": {
+      "requirement": 3.0,
+      "achieved": Infinity,
+      "unit": "m/s",
+      "margin": 0.8
+    },
+    "Mission Duration": {
+      "requirement": 90.0,
+      "achieved": 60.0,
+      "unit": "minutes",
+      "margin": 0.9
+    }
+  },
+  "overall_assessment": {
+    "all_requirements_passed": false,
+    "recommended_strategy": "Nominal",
+    "confidence_level": "Medium"
+  }
+}
